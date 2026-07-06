@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { config } from "./config";
 import { RateLimitStore } from "./stores/store.interface";
 import { MemoryStore } from "./stores/memoryStore";
@@ -29,6 +30,19 @@ async function main() {
   // Health check — not rate limited, so monitoring tools always get through.
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", algorithm: config.algorithm, backend: config.redisUrl ? "redis" : "memory" });
+  });
+
+  // Live dashboard (public/dashboard.html) — served directly by the gateway so
+  // it's same-origin with /api/*, meaning it can call the gateway with a plain
+  // fetch() and no CORS setup. Not rate limited: it's a monitoring tool, not
+  // API traffic.
+  app.use(express.static(path.join(__dirname, "..", "public")));
+  app.get("/dashboard-config", (_req, res) => {
+    res.json({
+      algorithm: config.algorithm,
+      capacity: config.tokenBucket.capacity,
+      refillRate: config.tokenBucket.refillRatePerSecond,
+    });
   });
 
   // Everything else passes through the rate limiter, then the proxy.
