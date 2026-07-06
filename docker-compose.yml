@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  mock-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["node", "dist/mockBackend.js"]
+    ports:
+      - "4000:4000"
+
+  # Run TWO gateway instances sharing the same Redis, to prove the
+  # rate limit is enforced GLOBALLY, not per-instance. This is the
+  # centerpiece demo of the whole project.
+  gateway-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - BACKEND_URL=http://mock-backend:4000
+      - REDIS_URL=redis://redis:6379
+      - RATE_LIMIT_ALGORITHM=token-bucket
+      - BUCKET_CAPACITY=10
+      - BUCKET_REFILL_RATE=2
+    depends_on:
+      - redis
+      - mock-backend
+
+  gateway-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - PORT=3000
+      - BACKEND_URL=http://mock-backend:4000
+      - REDIS_URL=redis://redis:6379
+      - RATE_LIMIT_ALGORITHM=token-bucket
+      - BUCKET_CAPACITY=10
+      - BUCKET_REFILL_RATE=2
+    depends_on:
+      - redis
+      - mock-backend
