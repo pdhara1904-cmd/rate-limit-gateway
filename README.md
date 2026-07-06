@@ -27,6 +27,8 @@ Every public API needs to protect itself from clients sending too many requests 
 
 Once the gateway is running, open **`http://localhost:3000/dashboard.html`** in a browser.
 
+![Live dashboard showing the token bucket, traffic stats, and request log](docs/dashboard-screenshot.png)
+
 You'll see:
 - A **token bucket that visually drains and refills** in real time, tied to the actual algorithm state — not a mock animation
 - A **live request log** showing every request's outcome (200 allowed / 429 blocked)
